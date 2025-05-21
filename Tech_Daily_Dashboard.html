@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Supervisor Dashboard</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f4f8;
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 10px 10px 10px 0;
+    }
+    select {
+      color: black;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #333;
+      color: white;
+    }
+    #headerReferenceTable thead th {
+      font-size: 0.8rem;
+    }
+    #headerReferenceTable tbody td {
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    #popup {
+      display: none;
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -20%);
+      background-color: white;
+      padding: 20px;
+      border: 2px solid #333;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      z-index: 1000;
+      max-height: 400px;
+      overflow-y: auto;
+      width: 320px;
+    }
+    #popup h3 {
+      margin-top: 0;
+    }
+    #popup table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #popup th, #popup td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: center;
+    }
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
+    }
+    #summaryContainer {
+      display: none; /* Hidden by default */
+    }
+  </style>
+</head>
+<body>
+
+<h2>Technician Dashboard</h2>
+
+<label>Service Supervisor Name:</label>
+<input type="text" id="searchSupervisor" placeholder="Enter supervisor name" oninput="filterData()" />
+
+<label>Main Responsible3:</label>
+<input type="text" id="searchResponsible" placeholder="Enter main responsible" oninput="filterData()" />
+
+<label>Complaint No:</label>
+<input type="text" id="searchComplaint" placeholder="Enter complaint no" oninput="filterData()" />
+
+<label>Sub Status:</label>
+<select id="statusFilter" onchange="filterData()">
+  <option value="">All</option>
+</select>
+
+<button onclick="filterData()">Search</button>
+
+<!-- Summary Table Container -->
+<div id="summaryContainer">
+  <table id="headerReferenceTable">
+    <thead>
+      <tr>
+        <th>Main Responsible3</th>
+        <th>Open Call</th>
+        <th>Call To Customer</th>
+        <th>Call Assigned</th>
+        <th>Pending From Customer</th>
+        <th>Pick Up For Repair</th>
+        <th>Unresolved Request</th>
+        <th>Pending</th>
+        <th>Delivered - Repair</th>
+        <th>In Transit - Repair</th>
+        <th>In Transit - Replace</th>
+        <th>Repair - In Process</th>
+        <th>Replace - In Process</th>
+        <th>Refund</th>
+      </tr>
+    </thead>
+    <tbody id="summaryBody"></tbody>
+  </table>
+</div>
+
+<!-- Detailed data table -->
+<div id="tableDiv"></div>
+<div id="chartDiv" style="width: 600px; height: 400px;"></div>
+
+<!-- Popup -->
+<div id="overlay" onclick="closePopup();"></div>
+<div id="popup">
+  <h3>Complaint IDs & TAT</h3>
+  <table>
+    <thead>
+      <tr><th>Complaint ID</th><th>TAT</th></tr>
+    </thead>
+    <tbody id="complaintList"></tbody>
+  </table>
+  <button onclick="closePopup()">Close</button>
+</div>
+
+<script>
+  let allData = [];
+
+  google.charts.load('current', { packages: ['corechart'] });
+
+  fetch('https://script.google.com/macros/s/AKfycbwFfmLrv03hP54ztUQV2a5TyePwI_cNCQU19joIef2IdeUwfmtD2i5LQ46ooAzHIQPGFQ/exec')
+    .then(res => res.json())
+    .then(data => {
+      allData = data;
+      populateStatusFilter();
+      filterData();
+    });
+
+  function populateStatusFilter() {
+    const subStatuses = Array.from(new Set(allData.map(d => d["Sub Status"]))).filter(Boolean);
+    const statusFilter = document.getElementById("statusFilter");
+    subStatuses.forEach(status => {
+      const opt = document.createElement("option");
+      opt.value = status;
+      opt.textContent = status;
+      statusFilter.appendChild(opt);
+    });
+  }
+
+  function filterData() {
+    const supervisorName = document.getElementById("searchSupervisor").value.trim().toLowerCase();
+    const responsibleName = document.getElementById("searchResponsible").value.trim().toLowerCase();
+    const complaintNo = document.getElementById("searchComplaint").value.trim().toLowerCase();
+    const selectedStatus = document.getElementById("statusFilter").value;
+
+    // Show/hide summary table
+    const summaryContainer = document.getElementById("summaryContainer");
+    if (supervisorName || responsibleName || complaintNo) {
+      summaryContainer.style.display = "block";
+    } else {
+      summaryContainer.style.display = "none";
+    }
+
+    const filtered = allData.filter(d => {
+      const supMatch = supervisorName === "" || (d["Service Supervisor Name"] && d["Service Supervisor Name"].toLowerCase().includes(supervisorName));
+      const respMatch = responsibleName === "" || (d["Main Responsible3"] && d["Main Responsible3"].toLowerCase().includes(responsibleName));
+      const compMatch = complaintNo === "" || (d["Complain No"] && d["Complain No"].toString().toLowerCase().includes(complaintNo));
+      const statusMatch = selectedStatus === "" || d["Sub Status"] === selectedStatus;
+      return supMatch && respMatch && compMatch && statusMatch;
+    });
+
+    updateSummaryTable(supervisorName, responsibleName);
+
+    if (filtered.length === 0) {
+      document.getElementById("tableDiv").innerHTML = "<p>No data found.</p>";
+      document.getElementById("chartDiv").innerHTML = "";
+      return;
+    }
+
+    const headers = Object.keys(filtered[0]);
+    let tableHTML = "<table><tr>" + headers.map(h => `<th>${h}</th>`).join('') + "</tr>";
+    filtered.forEach(row => {
+      tableHTML += "<tr>" + headers.map(h => `<td>${row[h]}</td>`).join('') + "</tr>";
+    });
+    tableHTML += "</table>";
+    document.getElementById("tableDiv").innerHTML = tableHTML;
+
+    const tatData = filtered.filter(d => Number(d["TAT"]) > 7)
+                            .map(d => [d["Complain No"], Number(d["TAT"])]);
+
+    if (tatData.length === 0) {
+      document.getElementById("chartDiv").innerHTML = "<p>No TAT > 7 to display.</p>";
+      return;
+    }
+
+    const chartData = google.visualization.arrayToDataTable([
+      ['Complain No', 'TAT'],
+      ...tatData
+    ]);
+
+    const options = {
+      title: 'TAT > 7 Pie Chart',
+      pieHole: 0.4
+    };
+
+    const chart = new google.visualization.PieChart(document.getElementById('chartDiv'));
+    chart.draw(chartData, options);
+  }
+
+  function updateSummaryTable(supervisorName, responsibleName) {
+    const filtered = allData.filter(d => {
+      const supMatch = supervisorName === "" || (d["Service Supervisor Name"] && d["Service Supervisor Name"].toLowerCase().includes(supervisorName));
+      const respMatch = responsibleName === "" || (d["Main Responsible3"] && d["Main Responsible3"].toLowerCase().includes(responsibleName));
+      return supMatch && respMatch;
+    });
+
+    const statusTypes = [
+      "Open",
+      "Call To Customer",
+      "Call Assigned",
+      "Pending From Customer",
+      "Pick Up For Repair",
+      "Unresolved Request",
+      "Delivered - Repair",
+      "In Transit - Repair",
+      "In Transit - Replace",
+      "Repair - In Process",
+      "Replace - In Process",
+      "Refund"
+    ];
+
+    const summaryMap = {};
+    const complaintMap = {};
+
+    filtered.forEach(d => {
+      const responsible = d["Main Responsible3"] || "Unknown";
+      const status = d["Sub Status"];
+      const complaintId = d["Complain No"];
+      const tat = d["TAT"];
+
+      if (!summaryMap[responsible]) {
+        summaryMap[responsible] = {};
+        complaintMap[responsible] = {};
+        statusTypes.forEach(s => {
+          summaryMap[responsible][s] = 0;
+          complaintMap[responsible][s] = [];
+        });
+      }
+
+      if (statusTypes.includes(status)) {
+        summaryMap[responsible][status]++;
+        complaintMap[responsible][status].push({ complaintId, tat });
+      }
+    });
+
+    const summaryBody = document.getElementById("summaryBody");
+    summaryBody.innerHTML = "";
+
+    for (const person in summaryMap) {
+      const pendingStatuses = [
+        "Open",
+        "Call To Customer",
+        "Call Assigned",
+        "Pending From Customer",
+        "Pick Up For Repair",
+        "Unresolved Request"
+      ];
+      const pendingCount = pendingStatuses.reduce((sum, status) => sum + summaryMap[person][status], 0);
+
+      const row = `<tr>
+        <td>${person}</td>` +
+        pendingStatuses.map(status => {
+          const count = summaryMap[person][status];
+          return `<td onclick="showPopup('${person}', '${status}')">${count}</td>`;
+        }).join('') +
+        `<td>${pendingCount}</td>` +
+        [
+          "Delivered - Repair",
+          "In Transit - Repair",
+          "In Transit - Replace",
+          "Repair - In Process",
+          "Replace - In Process",
+          "Refund"
+        ].map(status => {
+          const count = summaryMap[person][status];
+          return `<td onclick="showPopup('${person}', '${status}')">${count}</td>`;
+        }).join('') +
+      `</tr>`;
+
+      summaryBody.innerHTML += row;
+    }
+
+    window.complaintMap = complaintMap;
+  }
+
+  function showPopup(person, status) {
+    const tbody = document.getElementById("complaintList");
+    tbody.innerHTML = "";
+    const complaints = window.complaintMap?.[person]?.[status] || [];
+
+    if (complaints.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='2'>No complaints found</td></tr>";
+    } else {
+      complaints.forEach(({ complaintId, tat }) => {
+        tbody.innerHTML += `<tr><td>${complaintId}</td><td>${tat}</td></tr>`;
+      });
+    }
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("popup").style.display = "block";
+  }
+
+  function closePopup() {
+    document.getElementById("popup").style.display = "none";
+    document.getElementById("overlay").style.display = "none";
+  }
+</script>
+
+</body>
+</html>

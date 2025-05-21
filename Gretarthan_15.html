@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Complaint Tracker</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+
+    body {
+      margin: 0;
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      padding: 40px 20px;
+    }
+
+    h1, h3 {
+      color: #00eaff;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      transition: 0.3s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0, 255, 255, 0.3);
+    }
+
+    .filters {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #00eaff;
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    input, select {
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      outline: none;
+      min-width: 140px;
+      max-width: 180px;
+      transition: background 0.3s ease;
+    }
+
+    input::placeholder {
+      color: #ccc;
+    }
+
+    select option {
+      color: black;
+    }
+
+    input:focus, select:focus {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+      background-color: rgba(0, 234, 255, 0.2);
+      color: #fff;
+    }
+
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    a {
+      color: #00eaff;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .horizontal-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .horizontal-list button {
+      background: #00eaff;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 16px;
+      color: #003344;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: 0 2px 6px rgba(0,234,255,0.4);
+      user-select: none;
+    }
+
+    .horizontal-list button:hover {
+      background: #0099cc;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0,153,204,0.6);
+    }
+
+    #chart_div {
+      height: 300px;
+    }
+
+    #detailCard table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #detailCard th, #detailCard td {
+      padding: 10px 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      text-align: left;
+      color: #00eaff;
+      font-weight: 600;
+      width: 40%;
+    }
+
+    #detailCard td {
+      color: #ddd;
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Complaint Tracker Dashboard</h1>
+
+    <div class="glass-card filters">
+      <div class="filter-group">
+        <label for="searchInput">Search by Supervisor Name:</label>
+        <input type="text" id="searchInput" oninput="filterData()" placeholder="e.g. John" />
+      </div>
+
+      <div class="filter-group">
+        <label for="searchResponsibleInput">Search by Main Responsible3:</label>
+        <input type="text" id="searchResponsibleInput" oninput="filterData()" placeholder="e.g. Mike" />
+      </div>
+
+      <div class="filter-group">
+        <label for="subStatusSelect">Filter Sub Status:</label>
+        <select id="subStatusSelect" onchange="filterData()">
+          <option value="">All</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <h3>Complaint Table</h3>
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Supervisor</th>
+            <th>Responsible</th>
+            <th>TAT</th>
+            <th>Complaint No</th>
+            <th>Sub Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="glass-card" id="detailCard" style="display: none;">
+      <h3>Complaint Details</h3>
+      <table>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+
+    <div class="glass-card">
+      <h3>TAT 10 - 15</h3>
+      <div id="tat10to15List" class="horizontal-list"></div>
+      <p id="count10to15" style="margin-top:8px;"></p>
+    </div>
+
+    <div class="glass-card">
+      <h3>TAT > 15</h3>
+      <div id="tatOver15List" class="horizontal-list"></div>
+      <p id="countOver15" style="margin-top:8px;"></p>
+    </div>
+
+    <div class="glass-card" id="chart_div"></div>
+  </div>
+
+  <script>
+    let sheetData = [];
+    google.charts.load('current', { packages: ['corechart'] });
+
+    fetch('https://script.google.com/macros/s/AKfycbwp4JHjL6_8ZKimOaOXnvxHCZ17y3_lzkSPTFm4qIRPbNheQo-DREGhkLkzdpV7ahxq5w/exec')
+      .then(res => res.json())
+      .then(data => {
+        sheetData = data;
+        populateSubStatusFilter();
+        filterData();
+      });
+
+    function populateSubStatusFilter() {
+      const select = document.getElementById("subStatusSelect");
+      const uniqueStatuses = [...new Set(sheetData.map(row => row["Sub Status"]).filter(Boolean))];
+      uniqueStatuses.forEach(status => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status;
+        select.appendChild(option);
+      });
+    }
+
+    function filterData() {
+      const name = document.getElementById("searchInput").value.toLowerCase();
+      const responsible = document.getElementById("searchResponsibleInput").value.toLowerCase();
+      const subStatusFilter = document.getElementById("subStatusSelect").value;
+      const tbody = document.querySelector("#dataTable tbody");
+      const list10to15 = document.getElementById("tat10to15List");
+      const listOver15 = document.getElementById("tatOver15List");
+      const count10to15 = document.getElementById("count10to15");
+      const countOver15 = document.getElementById("countOver15");
+
+      tbody.innerHTML = '';
+      list10to15.innerHTML = '';
+      listOver15.innerHTML = '';
+      let c10to15 = 0, cOver15 = 0;
+
+      const filtered = sheetData.filter(row => {
+        const tat = parseFloat(row["TAT"]);
+        const matchName = row["Service Supervisor Name"]?.toLowerCase().includes(name);
+        const matchResponsible = row["Main Responsible3"]?.toLowerCase().includes(responsible);
+        const matchStatus = !subStatusFilter || row["Sub Status"] === subStatusFilter;
+        return matchName && matchResponsible && matchStatus && tat >= 10;
+      });
+
+      filtered.forEach(row => {
+        const tat = parseFloat(row["TAT"]);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row["Service Supervisor Name"] || ''}</td>
+          <td>${row["Main Responsible3"] || ''}</td>
+          <td>${tat}</td>
+          <td><a onclick='showDetails(${JSON.stringify(row)})'>${row["Complain No"]}</a></td>
+          <td>${row["Sub Status"] || ''}</td>
+        `;
+        tbody.appendChild(tr);
+
+        const btn = document.createElement("button");
+        btn.textContent = row["Complain No"];
+        btn.onclick = () => showDetails(row);
+
+        if (tat > 15) {
+          cOver15++;
+          listOver15.appendChild(btn);
+        } else {
+          c10to15++;
+          list10to15.appendChild(btn);
+        }
+      });
+
+      count10to15.textContent = `Total: ${c10to15}`;
+      countOver15.textContent = `Total: ${cOver15}`;
+      drawChart(c10to15, cOver15);
+    }
+
+    function drawChart(val10to15, valOver15) {
+      google.charts.setOnLoadCallback(() => {
+        const data = google.visualization.arrayToDataTable([
+          ['TAT Category', 'Count'],
+          ['TAT 10–15', val10to15],
+          ['TAT > 15', valOver15]
+        ]);
+
+        const options = {
+          backgroundColor: 'transparent',
+          pieHole: 0.4,
+          colors: ['#f6b93b', '#e55039'],
+          legend: { textStyle: { color: '#fff' } },
+          title: 'TAT Distribution',
+          titleTextStyle: { color: '#fff', fontSize: 18 },
+        };
+
+        const chart = new google.visualization.PieChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      });
+    }
+
+    function showDetails(row) {
+      const detailBody = document.getElementById("detailBody");
+      const detailCard = document.getElementById("detailCard");
+      detailBody.innerHTML = `
+        <tr><th>Service Supervisor</th><td>${row["Service Supervisor Name"]}</td></tr>
+        <tr><th>Main Responsible3</th><td>${row["Main Responsible3"]}</td></tr>
+        <tr><th>TAT</th><td>${row["TAT"]}</td></tr>
+        <tr><th>Complain No</th><td>${row["Complain No"]}</td></tr>
+        <tr><th>Sub Status</th><td>${row["Sub Status"]}</td></tr>
+        <tr><th>Product</th><td>${row["Product"]}</td></tr>
+        <tr><th>Problem</th><td>${row["Problem"]}</td></tr>
+        <tr><th>Other Problem</th><td>${row["Other Problem"]}</td></tr>
+        <tr><th>State Name</th><td>${row["State Name"]}</td></tr>
+        <tr><th>Area</th><td>${row["Area"]}</td></tr>
+        <tr><th>ZIP/Postal Code</th><td>${row["ZIP/postal code"] || "N/A"}</td></tr>
+      `;
+      detailCard.style.display = "block";
+      detailCard.scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

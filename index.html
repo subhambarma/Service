@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UCL Tools Hub</title>
+  <style>
+    :root {
+      --primary: #00f5c3;
+      --secondary: #0ff;
+      --bg-color: #0a0f1a;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      background: radial-gradient(circle at top left, #091921, #000814);
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 30px;
+      background: linear-gradient(90deg, #00f5c3, #00d4ff, #00f5c3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientMove 4s infinite linear;
+    }
+
+    @keyframes gradientMove {
+      0% {
+        background-position: 0%;
+      }
+      100% {
+        background-position: 200%;
+      }
+    }
+
+    .glass-container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+      max-width: 800px;
+      width: 90%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .glow-button {
+      position: relative;
+      padding: 15px 25px;
+      border: 2px solid var(--secondary);
+      border-radius: 15px;
+      font-size: 1.1rem;
+      color: var(--secondary);
+      background-color: transparent;
+      cursor: pointer;
+      overflow: hidden;
+      z-index: 1;
+      text-align: center;
+      transition: 0.3s;
+    }
+
+    .glow-button::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300%;
+      height: 300%;
+      background: radial-gradient(circle, var(--secondary), transparent 60%);
+      transition: 0.5s ease;
+      transform: translate(-50%, -50%) scale(0);
+      z-index: 0;
+    }
+
+    .glow-button:hover::before {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.5;
+    }
+
+    .glow-button:hover {
+      color: #000;
+      background-color: var(--secondary);
+      box-shadow: 0 0 15px var(--secondary), 0 0 40px var(--secondary);
+    }
+
+    .glow-button span {
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .glass-container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Universal Corporation Limited Tools Hub</h1>
+
+  <div class="glass-container">
+    <div class="glow-button" onclick="window.open('https://subhambarma.github.io/pincode/', '_blank')">
+      <span>Pincode Finder</span>
+    </div>
+    <div class="glow-button" onclick="location.href='Tech_Daily_Dashboard.html'">
+      <span>Tech Daily Dashboard</span>
+    </div>
+    <div class="glow-button" onclick="location.href='Call_load.html'">
+      <span>Call Load</span>
+    </div>
+    <div class="glow-button" onclick="location.href='Gretarthan_15.html'">
+      <span>&gt;15days</span>
+    </div>
+    <div class="glow-button" onclick="location.href='Rating.html'">
+      <span>Product Rating</span>
+    </div>
+  </div>
+
+</body>
+</html>

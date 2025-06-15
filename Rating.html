@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Product Catalog - Professional View</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f9fc;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      text-align: center;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      letter-spacing: 1.1px;
+    }
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      width: 250px;
+    }
+    .filter-group label {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #34495e;
+      letter-spacing: 0.05em;
+    }
+    .filter-group input {
+      padding: 10px 14px;
+      border: 2px solid #bdc3c7;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+    .filter-group input:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 8px rgba(52,152,219,0.3);
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 12px;
+    }
+    thead tr {
+      background: transparent;
+    }
+    thead th {
+      text-align: left;
+      padding: 12px 18px;
+      color: #34495e;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 2px solid #ecf0f1;
+    }
+    tbody tr {
+      background: #fff;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+      border-radius: 10px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    tbody tr:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+    }
+    tbody td {
+      padding: 14px 18px;
+      vertical-align: middle;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+    tbody td a {
+      color: #2980b9;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    tbody td a:hover {
+      color: #1c5980;
+      text-decoration: underline;
+    }
+    button.copy-btn {
+      background: #3498db;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      font-size: 13px;
+      border-radius: 6px;
+      margin-left: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 2px 6px rgba(52,152,219,0.4);
+    }
+    button.copy-btn:hover {
+      background: #1c5980;
+      box-shadow: 0 4px 10px rgba(28,89,128,0.6);
+    }
+    @media (max-width: 900px) {
+      .filters {
+        flex-direction: column;
+        align-items: center;
+      }
+      .filter-group {
+        width: 100%;
+        max-width: 400px;
+      }
+      tbody td {
+        font-size: 13px;
+        padding: 12px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Product Catalog</h1>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label for="filterSKU1">Filter by SKU1</label>
+      <input type="text" id="filterSKU1" placeholder="Enter SKU1..." />
+    </div>
+    <div class="filter-group">
+      <label for="filterTITLE">Filter by TITLE</label>
+      <input type="text" id="filterTITLE" placeholder="Enter TITLE..." />
+    </div>
+  </div>
+
+  <table id="productTable" aria-label="Product Table">
+    <thead>
+      <tr>
+        <th>SKU1</th>
+        <th>TITLE</th>
+        <th>Brands</th>
+        <th>Category</th>
+        <th>Amazon Link</th>
+        <th>Flipkart Link</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbykTFLVgC-mm53rCmvw-pdCGF2Hnfa_nlpsUmWyQ1elEY_Tf6xTmbo9de5agerovYey/exec';
+
+  const messagePrefix = "Dear Customer, Your complaint has been resolved. Please take a few minutes to give service feedback by clicking the link below and leave a 5-star review for your technician. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO Link - ";
+
+  let allData = [];
+
+  function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+      button.textContent = 'Copied!';
+      button.style.backgroundColor = '#27ae60';
+      setTimeout(() => {
+        button.textContent = 'Copy';
+        button.style.backgroundColor = '#3498db';
+      }, 1500);
+    }).catch(err => {
+      alert('Failed to copy text: ' + err);
+    });
+  }
+
+  function displayTable(data) {
+    const tbody = document.querySelector('#productTable tbody');
+    tbody.innerHTML = '';
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">No matching records found.</td></tr>';
+      return;
+    }
+
+    data.forEach(row => {
+      const amazonLink = row['Amazon Link'] || '';
+      const flipkartLink = row['Flipkary Link'] || '';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row['SKU1'] || ''}</td>
+        <td>${row['TITLE'] || ''}</td>
+        <td>${row['Brands'] || ''}</td>
+        <td>${row['Category'] || ''}</td>
+        <td>
+          ${amazonLink ? `<a href="${amazonLink}" target="_blank" rel="noopener noreferrer">Amazon</a>` : ''}
+          ${amazonLink ? `<button class="copy-btn">Copy</button>` : ''}
+        </td>
+        <td>
+          ${flipkartLink ? `<a href="${flipkartLink}" target="_blank" rel="noopener noreferrer">Flipkart</a>` : ''}
+          ${flipkartLink ? `<button class="copy-btn">Copy</button>` : ''}
+        </td>
+      `;
+
+      setTimeout(() => {
+        const copyButtons = tr.querySelectorAll('button.copy-btn');
+        copyButtons.forEach(btn => {
+          btn.onclick = () => {
+            const link = btn.previousElementSibling ? btn.previousElementSibling.href : '';
+            const fullMessage = messagePrefix + link;
+            if (link) {
+              copyToClipboard(fullMessage, btn);
+            }
+          };
+        });
+      }, 0);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function filterTable() {
+    const filterSKU1 = document.getElementById('filterSKU1').value.toLowerCase();
+    const filterTITLE = document.getElementById('filterTITLE').value.toLowerCase();
+
+    const filtered = allData.filter(row => {
+      const sku1Match = row['SKU1'] && row['SKU1'].toString().toLowerCase().includes(filterSKU1);
+      const titleMatch = row['TITLE'] && row['TITLE'].toString().toLowerCase().includes(filterTITLE);
+      return sku1Match && titleMatch;
+    });
+
+    displayTable(filtered);
+  }
+
+  document.getElementById('filterSKU1').addEventListener('input', filterTable);
+  document.getElementById('filterTITLE').addEventListener('input', filterTable);
+
+  fetch(scriptURL)
+    .then(response => response.json())
+    .then(data => {
+      allData = data;
+      displayTable(allData);
+    })
+    .catch(err => {
+      console.error('Failed to load data:', err);
+      const tbody = document.querySelector('#productTable tbody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#e74c3c;">Failed to load data.</td></tr>';
+    });
+</script>
+</body>
+</html>

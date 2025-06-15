@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AGARO Complaint Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #f3f6fc;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1f3c88;
+      margin-top: 60px;
+      font-size: 28px;
+    }
+
+    .top-right {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+
+    .msg-btn {
+      background: #1f3c88;
+      color: white;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: 0.3s ease;
+      animation: pulse 2s infinite;
+    }
+
+    .msg-btn:hover {
+      background-color: #102258;
+      transform: scale(1.05);
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(31, 60, 136, 0.4); }
+      70% { box-shadow: 0 0 0 12px rgba(31, 60, 136, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(31, 60, 136, 0); }
+    }
+
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 30px auto 20px;
+      flex-wrap: wrap;
+    }
+
+    select, input[type="text"] {
+      padding: 10px 15px;
+      font-size: 15px;
+      border: 2px solid #d0d7e4;
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    select:focus, input[type="text"]:focus {
+      border-color: #1f3c88;
+      box-shadow: 0 0 6px rgba(31, 60, 136, 0.3);
+    }
+
+    table {
+      width: 90%;
+      margin: 0 auto 40px;
+      border-collapse: collapse;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #1f3c88;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f6fd;
+    }
+
+    tr:hover {
+      background-color: #e6eefc;
+    }
+
+    .whatsapp-btn {
+      background-color: #25D366;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+
+    .whatsapp-btn:hover {
+      background-color: #1ebe5d;
+      box-shadow: 0 0 10px rgba(37, 211, 102, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      .filters {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      table {
+        font-size: 14px;
+      }
+
+      th, td {
+        padding: 10px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-right">
+    <a href="messageformate.html" class="msg-btn">Msg Formate</a>
+  </div>
+
+  <h1>AGARO Complaint Dashboard</h1>
+
+  <div class="filters">
+    <select id="statusFilter" onchange="filterTable()">
+      <option value="">All Sub Status</option>
+    </select>
+
+    <input type="text" id="techSearch" placeholder="Search Main Responsible3..." oninput="filterTable()" />
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Complain No</th>
+        <th>Sub Status</th>
+        <th>Main Responsible3</th>
+        <th>WhatsApp</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzQk87A696EtwDm5ORa1jxzPHLO4lWV8Jm5yNfr-xXVmn2SziF3vwbJTeTgi4-T6eOrxA/exec'; // Replace with your Apps Script Web App URL
+    let allData = [];
+
+    const statusMessages = {
+      "Open": `Dear Customer, I am #NAME#, service specialist for your complaint with the number "complaint number". If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`,
+      "Call To Customer": `Dear Customer, I spoke to you about your complaint being pending for the details. Please provide the details to resolve the problem. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO\n1. An invoice/warranty card copy.\n2. A 90-second fault video.\n3. Name with address.`,
+      "Pending From Customer": `Dear Customer, Your complaint with the number "complaint number" is pending for resolution. We tried to contact you; please provide the details or call back. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO\n1. An invoice/warranty card copy.\n2. A 90-second fault video.\n3. Name with address.`,
+      "Repair - In Process": `Dear Customer, Your complaint spare part is being dispatched in 2-3 days. We will update you on the dispatch date. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`,
+      "Replace - In Process": `Dear Customer, Your complaint has been approved for the replacement. We will update you on the dispatch date in 2-3 days. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`,
+      "In Transit - Repair": `Dear Customer, Your complaint spare part has been dispatched through "Courier Name & AWB". If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`,
+      "In Transit - Replace": `Dear Customer, Your complaint has been approved for replacement, and we have dispatched the product through "Courier Name & AWB". If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`,
+      "Unresolved Request": `Dear Customer, Your complaint is unresolved. Please provide the details to resolve the problem. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO\n1. An invoice/warranty card copy.\n2. A 30-second fault video.\n3. Name with address.`,
+      "Pick Up For Repair": `Dear Customer, Your complaint, product pickup, is scheduled. You will receive the pickup confirmation from the courier. Please keep your product packed for the pickup. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`,
+      "Call Assigned": `Dear Customer, Your complaint technician visit is rescheduled. I will update you when technician will visit, and #NAME# will resolve the problem. If you have any questions or issues, then contact us or our customer support at 9821486487. Team AGARO`
+    };
+
+    async function fetchData() {
+      const response = await fetch(scriptURL);
+      const data = await response.json();
+      allData = data;
+
+      const statusFilter = document.getElementById("statusFilter");
+      const uniqueStatus = [...new Set(data.map(row => row["Sub Status"]))];
+      uniqueStatus.forEach(status => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status;
+        statusFilter.appendChild(option);
+      });
+
+      renderTable(data);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      data.forEach(row => {
+        const complaintNo = row["Complain No"];
+        const subStatus = row["Sub Status"];
+        const responsible = row["Main Responsible3"] || "our team";
+        const mobile = row["Mobile No"];
+        const courierName = row["Courier Name"] || "";
+        const trackingNo = row["Courier Tracking no"] || "";
+
+        let msg = statusMessages[subStatus] || "";
+        msg = msg.replace(/"complaint number"/g, complaintNo);
+        msg = msg.replace(/#NAME#/g, responsible);
+
+        if (subStatus === "In Transit - Repair") {
+          msg = msg.replace("Courier Name & AWB", `${courierName} ${trackingNo}`.trim());
+        }
+
+        const encodedMsg = encodeURIComponent(msg);
+        const whatsappURL = `https://wa.me/91${mobile}?text=${encodedMsg}`;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${complaintNo}</td>
+          <td>${subStatus}</td>
+          <td>${responsible}</td>
+          <td><a class="whatsapp-btn" href="${whatsappURL}" target="_blank">Send Message</a></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTable() {
+      const statusVal = document.getElementById("statusFilter").value.toLowerCase();
+      const techSearch = document.getElementById("techSearch").value.toLowerCase();
+
+      const filtered = allData.filter(row => {
+        const statusMatch = !statusVal || (row["Sub Status"] || "").toLowerCase() === statusVal;
+        const techMatch = !techSearch || (row["Main Responsible3"] || "").toLowerCase().includes(techSearch);
+        return statusMatch && techMatch;
+      });
+
+      renderTable(filtered);
+    }
+
+    fetchData();
+  </script>
+
+</body>
+</html>

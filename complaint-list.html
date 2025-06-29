@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Complaints | UCL Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e3f2fd, #fff);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      font-size: 13px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #1976d2;
+      margin-bottom: 30px;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filter-row input, .filter-row button {
+      padding: 8px;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .filter-row button {
+      background-color: #1976d2;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .filter-row button:hover {
+      background-color: #125ea6;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #1976d2;
+      color: #fff;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    input.editable-input, select.editable-input {
+      width: 100%;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    button.update-btn {
+      padding: 5px 8px;
+      background-color: #43a047;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color 0.2s;
+    }
+
+    button.update-btn:hover {
+      background-color: #2e7d32;
+    }
+  </style>
+</head>
+<body>
+  <h2>✍️ Edit Submitted Complaints</h2>
+
+  <div class="filter-row">
+    <input type="text" id="filterComplaintId" placeholder="Complaint ID">
+    <input type="text" id="filterDocket" placeholder="Docket Number">
+    <input type="text" id="filterResponsible" placeholder="Main Responsible">
+    <input type="text" id="filterNewComplaint" placeholder="New Complaint">
+    <button onclick="applyFilters()">Search</button>
+    <button onclick="clearFilters()">Clear</button>
+  </div>
+
+  <table id="dataTable"></table>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzNyUpsNdwW4RgL-K0_heIL-KVtYiAWt50OBRkyi4Kxc2RRlCfScufLBRoBoUb1ezG7/exec	";
+    let fullData = [];
+
+    async function fetchData() {
+      const res = await fetch(scriptURL);
+      const data = await res.json();
+      fullData = data;
+      buildTable(data);
+    }
+
+    function formatDateDisplay(dateStr) {
+      if (!dateStr) return "";
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+
+    function formatDateValue(dateStr) {
+      if (!dateStr) return "";
+      return new Date(dateStr).toISOString().split("T")[0];
+    }
+
+    function buildTable(data) {
+      const table = document.getElementById("dataTable");
+      table.innerHTML = "";
+      const headers = data[0];
+      const editableCols = [4,5,6,7,8,9,10,11];
+
+      const headRow = document.createElement("tr");
+      headers.forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headRow.appendChild(th);
+      });
+      headRow.appendChild(document.createElement("th")).textContent = "Update";
+      table.appendChild(headRow);
+
+      data.slice(1).forEach(row => {
+        const tr = document.createElement("tr");
+        row.forEach((cell, i) => {
+          const td = document.createElement("td");
+
+          if (editableCols.includes(i)) {
+            if (headers[i].includes("Date")) {
+              const formattedDate = formatDateValue(cell);
+              td.innerHTML = `<input class="editable-input" type="date" value="${formattedDate}" data-index="${i}" title="${formatDateDisplay(cell)}">`;
+            } else if (headers[i] === "Status") {
+              td.innerHTML = `
+                <select class="editable-input" data-index="${i}">
+                  <option ${cell==="Intransit"?"selected":""}>Intransit</option>
+                  <option ${cell==="Not - pickup due to some reason"?"selected":""}>Not - pickup due to some reason</option>
+                  <option ${cell==="Delivered"?"selected":""}>Delivered</option>
+                </select>`;
+            } else if (headers[i] === "Status 2") {
+              td.innerHTML = `
+                <select class="editable-input" data-index="${i}">
+                  <option ${cell==="In-transit"?"selected":""}>In-transit</option>
+                  <option ${cell==="Delivered"?"selected":""}>Delivered</option>
+                  <option ${cell==="RTO"?"selected":""}>RTO</option>
+                </select>`;
+            } else {
+              td.innerHTML = `<input class="editable-input" type="text" value="${cell}" data-index="${i}">`;
+            }
+          } else {
+            td.textContent = cell;
+          }
+          tr.appendChild(td);
+        });
+
+        const btnTd = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.textContent = "Update";
+        btn.className = "update-btn";
+        btn.onclick = async () => {
+          const inputs = tr.querySelectorAll(".editable-input");
+          const updatedRow = [...row];
+          inputs.forEach(input => {
+            const i = parseInt(input.dataset.index);
+            updatedRow[i] = input.value;
+          });
+
+          const params = new URLSearchParams({
+            action: "update",
+            complaintId: String(row[0]).trim(),
+            docketNumber: updatedRow[4],
+            pickupDate: updatedRow[5],
+            deliveredDate: updatedRow[6],
+            status: updatedRow[7],
+            remarks1: updatedRow[8],
+            newComplaint: updatedRow[9],
+            status2: updatedRow[10],
+            remarks2: updatedRow[11]
+          });
+
+          const res = await fetch(scriptURL, { method: "POST", body: params });
+          const text = await res.text();
+          alert(text.includes("Updated") ? "✅ Updated Successfully" : "❌ " + text);
+          fetchData();
+        };
+
+        btnTd.appendChild(btn);
+        tr.appendChild(btnTd);
+        table.appendChild(tr);
+      });
+    }
+
+    function applyFilters() {
+      const id = document.getElementById("filterComplaintId").value.toLowerCase();
+      const docket = document.getElementById("filterDocket").value.toLowerCase();
+      const responsible = document.getElementById("filterResponsible").value.toLowerCase();
+      const newComplaint = document.getElementById("filterNewComplaint").value.toLowerCase();
+
+      const filtered = fullData.filter((row, idx) => {
+        if (idx === 0) return true;
+        return (
+          row[0].toString().toLowerCase().includes(id) &&
+          row[4].toString().toLowerCase().includes(docket) &&
+          row[1].toString().toLowerCase().includes(responsible) &&
+          row[9].toString().toLowerCase().includes(newComplaint)
+        );
+      });
+
+      buildTable(filtered);
+    }
+
+    function clearFilters() {
+      document.getElementById("filterComplaintId").value = "";
+      document.getElementById("filterDocket").value = "";
+      document.getElementById("filterResponsible").value = "";
+      document.getElementById("filterNewComplaint").value = "";
+      buildTable(fullData);
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>

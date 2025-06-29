@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Complaint Form</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #f9d423, #ff4e50, #1e90ff, #00c9ff);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .form-container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      max-width: 600px;
+      width: 100%;
+      padding: 30px 40px;
+      transition: 0.3s ease-in-out;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: 500;
+      margin-top: 10px;
+      display: block;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: #007BFF;
+      outline: none;
+      box-shadow: 0 0 5px rgba(0,123,255,0.3);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007BFF;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .secondary-btn {
+      background-color: #28a745;
+      margin-bottom: 20px;
+    }
+
+    .secondary-btn:hover {
+      background-color: #1e7e34;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>Manual Pickup Form</h2>
+
+    <button class="secondary-btn" onclick="window.open('complaint-list.html', '_blank')">
+      📋 View Complaint List
+    </button>
+
+    <form id="complaintForm">
+      <label>Complaint ID
+        <input name="complaintId" required />
+      </label>
+      <label>Main Responsible
+        <input name="mainResponsible" />
+      </label>
+      <label>Product
+        <input name="product" />
+      </label>
+      <label>Problems
+        <input name="problems" />
+      </label>
+      <label>Docket Number
+        <input name="docketNumber" />
+      </label>
+      <label>Pickup Date
+        <input type="date" name="pickupDate" />
+      </label>
+      <label>Delivered Date
+        <input type="date" name="deliveredDate" />
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="">-- Select Status --</option>
+          <option>Intransit</option>
+          <option>Not - pickup due to some reason</option>
+          <option>Delivered</option>
+        </select>
+      </label>
+      <label>Remarks 1
+        <input name="remarks1" />
+      </label>
+
+      <!-- Hidden Fields -->
+      <label class="hidden">New Complaint
+        <input name="newComplaint" />
+      </label>
+      <label class="hidden">Status 2
+        <select name="status2">
+          <option value="">-- Select --</option>
+          <option>In-transit</option>
+          <option>Delivered</option>
+          <option>RTO</option>
+        </select>
+      </label>
+      <label class="hidden">Remarks 2
+        <input name="remarks2" />
+      </label>
+
+      <button type="submit">Submit Complaint</button>
+    </form>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzNyUpsNdwW4RgL-K0_heIL-KVtYiAWt50OBRkyi4Kxc2RRlCfScufLBRoBoUb1ezG7/exec";
+
+    function formatDateToDDMMYYYY(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      const dd = String(date.getDate()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const yyyy = date.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
+    document.getElementById("complaintForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const params = new URLSearchParams();
+
+      for (const [key, value] of formData.entries()) {
+        if (key === 'pickupDate' || key === 'deliveredDate') {
+          params.append(key, formatDateToDDMMYYYY(value));
+        } else {
+          params.append(key, value);
+        }
+      }
+
+      try {
+        const res = await fetch(scriptURL, {
+          method: "POST",
+          body: params
+        });
+        const text = await res.text();
+        alert(text.includes("Success") ? "✅ Submitted!" : text);
+        form.reset();
+      } catch (err) {
+        alert("❌ Error submitting: " + err.message);
+      }
+    });
+  </script>
+
+</body>
+</html>
